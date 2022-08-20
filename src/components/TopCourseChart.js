@@ -2,37 +2,15 @@ import React, { PureComponent } from 'react';
 import { BarChart, Bar, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 
-export const TopCourseChart = () => {
-    const top_courses = [
-        {
-            "name": "Kotlin Course",
-            "students": 25
-        },
-        {
-            "name": "Python for baby",
-            "students": 22
-        },
-        {
-            "name": "Cook Like Ramsey",
-            "students": 17
-        },
-        {
-            "name": "World War 2 Documentary",
-            "students": 12
-        },
-        {
-            "name": "How To Get Rich In 2 Minutes",
-            "students": 8
-        }
-    ]
-
+export const TopCourseChart = ({top_courses}) => {
     const barColors = ["#1f77b4", "#ff7f0e", "#2ca02c", "#f5424e", "#f5ef42"]
+    
     return (
-        <div className="w-full max-w-xl flex flex-col  border-2 rounded-xl shadow-md m-4 bg-white">
+        <div className="w-full border-2 rounded-xl shadow-md m-4 bg-white">
             <h1 className="p-4 font-semibold text-lg">Top Course</h1>
-            <ResponsiveContainer width={500} height={400}>
+            <ResponsiveContainer width="100%" height={400}>
                 <BarChart 
-                    width={500} 
+                    width="50%"
                     height={300} 
                     data={top_courses} 
                     layout="vertical"

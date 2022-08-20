@@ -1,35 +1,57 @@
-import { useEffect, useState } from "react"
-import { Link } from "react-router-dom"
+import { useContext, useEffect, useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
 
 import Icons from "../images/icons"
 import Images from "../images"
 import Button from "./Button"
+import Login from "./Login"
+import { AuthContext } from "../context"
 
 const AuthBar = () => {
+  const [showLogin, setShowLogin] = useState(false)
   return (
     <div>
-      <Link to='login' className="mx-2">
-        <Button>Log In</Button>
-      </Link>
+      <Button onClick={() => setShowLogin(true)}>Log In</Button>
       <Link to='register' className="mx-2">
         <Button>Register</Button>
       </Link>
+
+      {
+        showLogin && <Login {...{ setShowLogin }} />
+      }
     </div>
   )
 }
 
 const UserBar = () => {
+  const navigate = useNavigate()
+  const { auth, setAuth } = useContext(AuthContext)
+
+  const handleLogout = () => {
+    setAuth(null)
+    navigate('/')
+  }
+
   return (
     <div className="group h-full flex items-center justify-end relative">
       <div className="flex items-center space-x-2">
-        <img src={Images.DefaultUser} alt="" className="h-12" />
-        <span>User</span>
+        <img src={auth.user.image ? auth.user.image : Images.DefaultUser} alt="pictures of you" className="w-10 h-10 rounded-full" />
+        <span>{auth.user.name}</span>
         <Icons.Dropdown className="h-6" />
       </div>
       <div className="w-40 bg-white shadow-lg hidden group-hover:block hover:block absolute right-0 top-16 border border-slate-200 p-4 z-20">
-        <Link to='/logout'>
-          <span className="hover:text-teal-700 hover:underline inline-block w-full">Log out</span>
+        <Link to={`/dashboard/${auth.user.role}`}>
+          <span className="hover:text-teal-700 hover:underline inline-block w-full">Dashboard</span>
         </Link>
+        {
+          auth.user.role === 'admin' ?
+            <Link to={`/proposal/`}>
+              <span className="hover:text-teal-700 hover:underline inline-block w-full">Proposal</span>
+            </Link>
+          :
+            <></>
+        }
+        <button onClick={handleLogout} className="hover:text-teal-700 hover:underline inline-block w-full text-left">Log out</button>
       </div>
     </div>
   )
@@ -46,6 +68,7 @@ const MenuButton = () => {
 const Header = () => {
   const [search, setSearch] = useState('')
   const [windowWidth, setWindowWidth] = useState(window.innerWidth)
+  const authContext = useContext(AuthContext)
 
   const detectSize = () => {
     setWindowWidth(window.innerWidth)
@@ -57,8 +80,9 @@ const Header = () => {
     }
   }, [windowWidth])
 
+
   return (
-    <header className="w-full h-16 shadow-md z-20">
+    <header className="w-full h-16 shadow-md bg-white z-30 fixed top-0">
       <div className="container mx-auto h-full flex justify-between items-center px-4 lg:px-8">
         <Link to='/'>
           <img src={Images.Logo} alt="" className="h-12 w-12" />
@@ -79,7 +103,10 @@ const Header = () => {
         {
           windowWidth < 768
             ? <MenuButton />
-            : <UserBar />
+            : (
+              authContext.auth !== null
+                ? <UserBar />
+                : <AuthBar />)
         }
 
       </div>

@@ -1,87 +1,201 @@
 import React, { useState } from "react";
+import MainLayout from "../components/MainLayout";
+import Header from "../components/Header"
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useParams, useNavigate } from "react-router-dom";
+import useSWR from "swr";
+import { API_URL } from "../config"
+import { Loading } from "../components/Loading";
+import Toast from "../components/Toast";
 
-export const CourseDetail = () => {
-    const [showMoreDesc, setShowMoreDesc] = useState(false)
-    const [showContent, setShowContent] = useState(false)
+const auth = JSON.parse(localStorage.getItem('auth'))
+const accessToken = auth ? auth.accessToken.value : ''
+const userRole = auth ? auth.user.role : ''
 
-    const description = `Disini kita akan belajar Pemrograman JavaScript dari tingkat dasar sampai tingkat mahir, disertai dengan studi kasus.
-    Materi akan selalu di update secara berkala, dan ketika materi di update, harga course pun akan diupdate dengan harga baru. Jadi pastikan untuk secepatnya membeli course ini, makin cepat, makin murah harga pembelian course ini.
-    Course ini juga didukung dengan private group DISCORD sehingga kita bisa berdiskusi sesama member ketika terjadi masalah di course ini.
-    Fokus pemrograman JavaScript ini akan mengarah Disini kita akan belajar Pemrograman JavaScript dari tingkat dasar sampai tingkat mahir, disertai dengan studi kasus.
-    Materi akan selalu di update secara berkala, dan ketika materi di update, harga course pun akan diupdate dengan harga baru. Jadi pastikan untuk secepatnya membeli course ini, makin cepat, makin murah harga pembelian course ini.
-    Course ini juga didukung dengan private group DISCORD sehingga kita bisa berdiskusi sesama member ketika terjadi masalah di course ini.
-    Fokus pemrograman JavaScript ini akan mengarahke frontend, sedangkan untuk materi javascript backend akan dibuat dalam course terpisah dengan tema NodeJS.
-    Pada materi ini, kita tidak akan membahas tentang HTML dan CSS, jadi pastikan teman-teman sudah menguasai tentang HTML dan juga CSS, karena pada course ini, tidak akan membahas HTML dan CSS.`
-    
+const ContentLecture = ({ item, is_enrolled }) => {
+    const [isEnrolled, setIsEnrolled] = useState(is_enrolled)
+
+    const completeCourse = async (id) => {
+        try {
+            const res = await fetch(API_URL + `/progress/${id}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + accessToken
+                }
+            })
+            if (res.status === 202) {
+                setIsEnrolled(true)
+                Toast('success', 'Successfuly Completed Lecture!')
+            }
+        } catch (e) {
+            Toast('error', e)
+        }
+    }
+
     return (
-        <div className="container mx-auto mt-10">
-            <div className="grid grid-cols-3 mb-10">
-                <div className="col-span-1">
-                    <img src="course_js_basic.jpeg" className="border-2 col-span-1"/>
-                    {/* <div className="flex justify-center mt-2">
-                        <button className="py-2 px-5 border-green-600 bg-green-600 text-white rounded-xl hover:bg-green-500">Enroll</button>
-                    </div> */}
+        <div className="flex items-center py-1">
+            <FontAwesomeIcon icon="fa-solid fa-circle-play" />
+            {isEnrolled ?
+                <div className="flex justify-between w-full">
+                    <a className="ml-2 text-blue-600" href={item.link} target="_blank" rel="noreferrer">{item.title}</a>
+                    <button className="text-xs p-1 border-2 rounded-lg border-teal-700 bg-white text-teal-700 hover:bg-teal-700 hover:text-white transition" onClick={() => completeCourse(item.id)}>Mark as Complete</button>
                 </div>
-                <div className="ml-10 col-span-2">
-                    <h1 className="font-bold text-3xl">Pemrograman JavaScript : Pemula sampai Mahir</h1>
-                    <div className="flex justify-between items-center mb-2">
-                        <h1 className="font-semibold text-lg">Instructor: Eko Kurniawan Khannedy</h1>
-                        <h1 className="text-sm text-gray-500">Updated at June 20, 2022</h1>
+                :
+                <p className="ml-2">{item.title}</p>
+            }
+        </div>
+    )
+}
+
+const ContentQuiz = ({ item, is_enrolled }) => {
+    return (
+        <div className="flex items-center py-1">
+            <FontAwesomeIcon icon="fa-solid fa-list-check" />
+            {is_enrolled ?
+                <div className="flex justify-between w-full items-center">
+                    <a className="ml-2 text-blue-600" href={`/quiz/${item.id}`}>{item.title}</a>
+                    <p className="text-xs text-teal-700">Score: {item.score}</p>
+                </div>
+                :
+                <p className="ml-2">{item.title}</p>
+            }
+        </div>
+    )
+}
+
+const CourseHeader = ({ item, is_enrolled, role }) => {
+    const [showMoreDesc, setShowMoreDesc] = useState(false)
+    const [isEnrolled, setIsEnrolled] = useState(is_enrolled)
+
+    const enrolledCourse = async () => {
+        try {
+            const res = await fetch(API_URL + '/enroll', {
+                method: "POST",
+                headers: { 'Authorization': 'Bearer ' + accessToken },
+                body: JSON.stringify({ "course_id": item.id })
+            })
+            console.log(res)
+            if (res.status === 202) {
+                Toast('success', 'Successfully enrolled the course')
+                setIsEnrolled(true)
+            } else {
+                Toast('error', 'Something wrong')
+            }
+        } catch (e) {
+            Toast('error', e)
+        }
+    }
+
+    return (
+        <div className="grid lg:grid-cols-3 sm:grid-rows-1 mb-10">
+            <div className="col-span-1 content-center">
+                <img src={item.image} className="border-2 col-span-1" />
+                {!isEnrolled && role === 'student' &&
+                    <div className="flex justify-center mt-2">
+                        <button className="py-2 px-5 border-2 rounded-lg border-teal-700 bg-white text-teal-700 hover:bg-teal-700 hover:text-white transition" onClick={() => enrolledCourse()}>Enroll</button>
                     </div>
-                    <h1 className="font-semibold italic">Description</h1>
-                    <p>
-                        { showMoreDesc ? description : description.substring(0, 630) + '...'}
+                }
+            </div>
+            <div className="lg:ml-10 col-span-2">
+                <h1 className="font-bold text-3xl">{item.title}</h1>
+                <div className="flex justify-between items-center mb-2">
+                    <h1 className="font-semibold text-lg">Instructor: {item.instructor.name}</h1>
+                    {/* <h1 className="text-sm text-gray-500">{item.updated_at.slice(0,10)}</h1> */}
+                </div>
+                <h1 className="font-semibold italic">Description</h1>
+                <p>
+                    {/* { showMoreDesc ? item.description : item.description.substring(0, 630) + '...'} */}
+                    {/* {   item.description.length > 630 &&
                         <button className="text-blue-400 font-semibold ml-1" onClick={() => setShowMoreDesc(!showMoreDesc)}>
                             { showMoreDesc ? 'Show Less' : 'Show More'}
                         </button>
-                    </p>
-                </div>
-            </div>
-            <div className="rounded-xl shadow-md bg-white border-2 p-5">
-                <div className="flex justify-between items-center">
-                    <h1 className="font-semibold text-xl">Content</h1>
-                    <button className="cursor-pointer" onClick={() => setShowContent(!showContent)}>
-                        {
-                            showContent ?
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-up-fill" viewBox="0 0 16 16">
-                                    <path d="m7.247 4.86-4.796 5.481c-.566.647-.106 1.659.753 1.659h9.592a1 1 0 0 0 .753-1.659l-4.796-5.48a1 1 0 0 0-1.506 0z"/>
-                                </svg>
-                            :
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-caret-down-fill" viewBox="0 0 16 16">
-                                    <path d="M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z"/>
-                                </svg>
-                        }
-                    </button>
-                </div>
-                {
-                    showContent ?
-                        <div className="px-5 pt-5">
-                            <div className="flex items-center py-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-circle-fill" viewBox="0 0 16 16">
-                                    <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM6.79 5.093A.5.5 0 0 0 6 5.5v5a.5.5 0 0 0 .79.407l3.5-2.5a.5.5 0 0 0 0-.814l-3.5-2.5z"/>
-                                </svg>
-                                <a className="ml-2 text-blue-600" href="https://www.udemy.com/course/pemrograman-javascript-pemula-sampai-mahir/">Pendahuluan</a>
-                            </div>
-                            <div className="flex items-center py-1">
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-play-circle-fill" viewBox="0 0 16 16">
-                                    <path d="M16 8A8 8 0 1 1 0 8a8 8 0 0 1 16 0zM6.79 5.093A.5.5 0 0 0 6 5.5v5a.5.5 0 0 0 .79.407l3.5-2.5a.5.5 0 0 0 0-.814l-3.5-2.5z"/>
-                                </svg>
-                                <a className="ml-2" href="https://www.udemy.com/course/pemrograman-javascript-pemula-sampai-mahir/">Pengenalan Javascript</a>
-                            </div>
-                            <div className="flex items-center py-1">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-list-task" viewBox="0 0 16 16">
-                                <path fill-rule="evenodd" d="M2 2.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5V3a.5.5 0 0 0-.5-.5H2zM3 3H2v1h1V3z"/>
-                                <path d="M5 3.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5zM5.5 7a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1h-9zm0 4a.5.5 0 0 0 0 1h9a.5.5 0 0 0 0-1h-9z"/>
-                                <path fill-rule="evenodd" d="M1.5 7a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5H2a.5.5 0 0 1-.5-.5V7zM2 7h1v1H2V7zm0 3.5a.5.5 0 0 0-.5.5v1a.5.5 0 0 0 .5.5h1a.5.5 0 0 0 .5-.5v-1a.5.5 0 0 0-.5-.5H2zm1 .5H2v1h1v-1z"/>
-                            </svg>
-                                <a className="ml-2 text-blue-600" href="/quiz">Quiz 1</a>
-                            </div>
-                        </div>
-                    :
-                        <></>
-                }
-                
+                    } */}
+                </p>
             </div>
         </div>
+    )
+}
+
+const CourseContent = ({ item, is_enrolled }) => {
+    const [showContent, setShowContent] = useState(false)
+
+    return (
+        <div className="rounded-xl shadow-md bg-white border-2 p-5">
+            <div className="flex justify-between items-center">
+                <h1 className="font-semibold text-xl">Content</h1>
+                <button className="cursor-pointer" onClick={() => setShowContent(!showContent)}>
+                    {
+                        showContent ?
+                            <FontAwesomeIcon icon="fa-solid fa-angles-up" />
+                            :
+                            <FontAwesomeIcon icon="fa-solid fa-angles-down" />
+                    }
+                </button>
+            </div>
+            {showContent &&
+                <div className="px-5 pt-5">
+                    {
+                        item.lectures.map((val, idx) => (
+                            <ContentLecture key={idx} item={val} is_enrolled={is_enrolled} />
+                        ))
+                    }
+                    {
+                        item.quizzes.map((val, idx) => (
+                            <ContentQuiz key={idx} item={val} is_enrolled={is_enrolled} />
+                        ))
+                    }
+                </div>
+            }
+        </div>
+    )
+}
+
+const CourseData = () => {
+    const idOfCourse = (useParams()).id
+    const [isEnrolled, setIsEnrolled] = useState()
+    const navigate = useNavigate()
+
+    const fetchData = async (url, token) => {
+        const res = await fetch(url, {
+            method: 'GET',
+            headers: {
+                'Authorization': 'Bearer ' + token
+            }
+        })
+        if (res.status === 403) {
+            navigate('/403')
+        } else if (res.status === 401) {
+            navigate('/register')
+        }
+        const data = await res.json()
+        setIsEnrolled(data.is_enrolled)
+        return data.data
+    }
+
+    const { data, error } = useSWR([`${API_URL}/course/${idOfCourse}`, accessToken], fetchData)
+
+    if (!data && !error) {
+        return (
+            <Loading />
+        )
+    }
+
+    if (data) {
+        return (
+            <div className="container mx-auto mt-10">
+                <CourseHeader item={data} is_enrolled={isEnrolled} role={userRole} />
+                <CourseContent item={data} is_enrolled={isEnrolled} />
+            </div>
+        )
+    }
+}
+
+export const CourseDetail = () => {
+    return (
+        <MainLayout>
+            <Header />
+            <CourseData />
+        </MainLayout>
     )
 }

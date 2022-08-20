@@ -1,61 +1,82 @@
-import { useState } from "react"
+import { useContext, useEffect, useState } from "react"
+import { useNavigate } from "react-router-dom"
+import useSWR from "swr"
+
 import Button from "../components/Button"
 import CourseCard from "../components/CourseCard"
+import CourseCardSkeleton from "../components/CourseCard/skeleton"
 import Header from "../components/Header"
 import MainLayout from "../components/MainLayout"
 import { SummaryCard } from "../components/SummaryCard"
+import { SummaryCardSkeleton } from "../components/SummaryCardSkeleton"
+import { API_URL } from "../config"
+import { AuthContext } from "../context"
 import Icons from "../images/icons"
 
+
+const CoursesList = ({ index, status, fetcher }) => {
+  const { data, error } = useSWR(`${API_URL}/mycourse/${index}`, fetcher)
+
+  // Loading handler
+  if (!data) {
+    return [1, 2, 3, 4, 5].map((i) => (
+      <CourseCardSkeleton key={i}>
+        <div className="mb-6 h-4 bg-slate-300 w-1/3" />
+        <div className="mb-1 h-4 bg-slate-300 w-1/2 self-end" />
+      </CourseCardSkeleton>
+    ))
+  }
+
+  // Fetch success handler
+  if (data) {
+    return data.map(course => {
+      if (status === 'All' || status === course.status) return (
+        <CourseCard key={course.id} title={course.title} image={course.image} id={course.id}>
+          <p className="mb-4 font-semibold text-slate-500">{course.status}</p>
+          <div className="text-right text-teal-700">{course.enrolled_student} students</div>
+        </CourseCard>
+      )
+    })
+  }
+
+}
+
 const InstructorDashboard = () => {
+  // CHECK AUTHENTICATION
+  const { auth } = useContext(AuthContext)
+  useEffect(() => {
+    if (auth === null) navigate('/')
+  }, [])
+
+  // FETCH Summary Data
+  const fetcher = async (url) => {
+    const requestOptions = {
+      method: 'GET',
+      headers: {
+        Authorization: 'Bearer ' + auth.accessToken.value
+      }
+    }
+    const res = await fetch(url, requestOptions)
+    return (await res.json()).data
+  }
+
+  const { data: summaryData, error: summaryError } = useSWR(`${API_URL}/instructor-dashboard`, fetcher)
+
   const [search, setSearch] = useState('')
+  const [pageIndex, setPageIndex] = useState(1)
+  const [courseStatus, setCourseStatus] = useState('All')
 
-  const summaryData = [
-    {
-      name: 'Course created',
-      amount: 50
-    },
-    {
-      name: 'Course verified',
-      amount: 29
-    },
-    {
-      name: 'Course pending',
-      amount: 9
-    },
-    {
-      name: 'Course rejected',
-      amount: 12
-    },
-  ]
+  const navigate = useNavigate()
 
-  const courses = [
-    {
-      title: "Learn Python from Scratch Blablabla Bla Bla Bla",
-      status: "Verified",
-      students: 18,
-    },
-    {
-      title: "Learn Python from Scratch Blablabla Bla Bla Bla",
-      status: "Verified",
-      students: 20,
-    },
-    {
-      title: "Learn Python from Scratch Blablabla Bla Bla Bla",
-      status: "Pending",
-      students: 0,
-    },
-    {
-      title: "Learn Python from Scratch Blablabla Bla Bla Bla",
-      status: "Pending",
-      students: 0,
-    },
-    {
-      title: "Learn Python from Scratch Blablabla Bla Bla Bla",
-      status: "Rejected",
-      students: 0,
-    },
 
-  ]
+  let courses = []
+  for (let i = 0; i < pageIndex; i++) {
+    courses.push(<CoursesList index={i + 1} key={i} status={courseStatus} fetcher={fetcher} />)
+  }
+  useEffect(() => {
+    setPageIndex(1)
+  }, [courseStatus])
+
 
   return (
     <MainLayout>
@@ -65,9 +86,20 @@ const InstructorDashboard = () => {
           <h1 className="text-3xl font-bold text-teal-700">Summary</h1>
           <div className="flex justify-between">
             {
-              summaryData.map((val, idx) => (
-                <SummaryCard key={idx} item={val} />
-              ))
+              summaryData ?
+                <>
+                  <SummaryCard item={{ name: 'Created Course', amount: summaryData.created_course }} />
+                  <SummaryCard item={{ name: 'Verified Course', amount: summaryData.verified_course }} />
+                  <SummaryCard item={{ name: 'Pending Course', amount: summaryData.pending_course }} />
+                  <SummaryCard item={{ name: 'Rejected Course', amount: summaryData.rejected_course }} />
+                </>
+                :
+                <>
+                  <SummaryCardSkeleton />
+                  <SummaryCardSkeleton />
+                  <SummaryCardSkeleton />
+                  <SummaryCardSkeleton />
+                </>
             }
           </div>
         </div>
@@ -78,11 +110,16 @@ const InstructorDashboard = () => {
           <div className="flex flex-wrap justify-between">
             <h1 className="text-3xl font-bold text-teal-700">Your Courses</h1>
             <div className="flex w-1/3 justify-between">
-              <select name="course-status" className="rounded-lg px-2 outline outline-2 outline-slate-200 focus:outline-teal-700">
-                <option value="all">All</option>
-                <option value="verified">Verified</option>
-                <option value="pending">Pending</option>
-                <option value="rejected">Rejected</option>
+              <select
+                name="course-status"
+                value={courseStatus}
+                onChange={e => setCourseStatus(e.target.value)}
+                className="rounded-lg px-2 outline outline-2 outline-slate-200 focus:outline-teal-700"
+              >
+                <option value="All">All</option>
+                <option value="Approved">Approved</option>
+                <option value="Pending">Pending</option>
+                <option value="Rejected">Rejected</option>
               </select>
               <div className="relative flex-auto ml-8 mr-2">
                 <div className="absolute inset-y-0 left-2 flex items-center">
@@ -101,16 +138,11 @@ const InstructorDashboard = () => {
           </div>
 
           <div className="flex flex-wrap mt-4">
-            {courses.map((course, idx) => (
-              <CourseCard key={idx} title={course.title} image={course.image}>
-                <p className="mb-4 font-semibold text-slate-500">{course.status}</p>
-                <div className="text-right text-teal-700">{course.students} students</div>
-              </CourseCard>
-            ))}
+            {courses}
           </div>
 
           <div className="flex justify-center">
-            <Button>Load more...</Button>
+            <Button onClick={() => setPageIndex(pageIndex + 1)}>Load more...</Button>
           </div>
 
         </div>

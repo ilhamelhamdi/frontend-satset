@@ -8,6 +8,7 @@ import Quiz from './quiz.jpg'
 import Thinking from './thinking.jpg'
 import Webinar from './webinar.jpg'
 import Logo from './logo.png'
+import Unauthorized from './unauthorized.jpg'
 
 const Images = {
   Concept,
@@ -19,7 +20,8 @@ const Images = {
   Quiz,
   Thinking,
   Webinar,
-  Logo
+  Logo,
+  Unauthorized
 }
 
 export default Images

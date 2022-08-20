@@ -6,50 +6,49 @@ import "slick-carousel/slick/slick-theme.css";
 import Carousel from "../components/Carousel";
 import Button from "../components/Button";
 import CourseCard from "../components/CourseCard";
+import { useState } from "react";
+import { API_URL } from "../config";
+import CourseCardSkeleton from "../components/CourseCard/skeleton";
+import useSWR from "swr";
+
+const CoursesList = ({ index }) => {
+  const fetchCourses = async (...args) => {
+    const res = await fetch(...args)
+    return (await res.json()).data
+  }
+
+  const { data, error } = useSWR(`${API_URL}/courses/${index}`, fetchCourses)
+
+  // Loading handler
+  if (!data && !error) {
+    return [1, 2, 3, 4, 5].map((i) => (
+      <CourseCardSkeleton key={i}>
+        <div className="w-1/2 h-4 bg-slate-300 mb-7" />
+        <div className="w-1/2 h-4 bg-slate-300 self-end" />
+      </CourseCardSkeleton>
+    ))
+  }
+
+  // Fetch success handler
+  if (data) {
+    return data.map(course => (
+      <CourseCard key={course.id} title={course.title} image={course.image} id={course.id}>
+        <p className="mb-4 font-semibold text-teal-700">{course.instructor_name}</p>
+        <p className="text-right ">{course.enrolled_student} students</p>
+      </CourseCard>
+    ))
+  }
+
+}
 
 const Homepage = () => {
-  const courses = [
-    {
-      title: "Learn Python from Scratch Blablabla Bla Bla Bla",
-      instructor: "Hamdi",
-      students: 209
-    },
-    {
-      title: "Learn Python from Scratch",
-      instructor: "Hamdi",
-      students: 209
-    },
-    {
-      title: "Learn Python from Scratch",
-      instructor: "Hamdi",
-      students: 209
-    },
-    {
-      title: "Learn Python from Scratch",
-      instructor: "Hamdi",
-      students: 209
-    },
-    {
-      title: "Learn Python from Scratch",
-      instructor: "Hamdi",
-      students: 209
-    },
-    {
-      title: "Learn Python from Scratch",
-      instructor: "Hamdi",
-      students: 209
-    },
-    {
-      title: "Learn Python from Scratch",
-      instructor: "Hamdi",
-      students: 209
-    },
-    {
-      title: "Learn Python from Scratch",
-      instructor: "Hamdi",
-      students: 209
-    },
-  ]
+  const [pageIndex, setPageIndex] = useState(1)
+
+  const courses = []
+  for (let i = 0; i < pageIndex; i++) {
+    courses.push(<CoursesList index={i + 1} key={i} />)
+  }
+
   return (
     <MainLayout>
       <Header />
@@ -59,17 +58,10 @@ const Homepage = () => {
         <div className="w-full mb-4">
           <h2 className="text-3xl font-bold mb-4 text-teal-700">Popular Courses</h2>
           <div className="flex flex-wrap">
-            {
-              courses.map((course, i) => (
-                <CourseCard title={course.title} image={course.image}>
-                  <p className="mb-4 font-semibold text-teal-700">{course.instructor}</p>
-                  <p className="text-right ">{course.students} students</p>
-                </CourseCard>
-              ))
-            }
+            {courses}
           </div>
           <div className="flex justify-center">
-            <Button>Load more...</Button>
+            <Button onClick={() => setPageIndex(pageIndex + 1)}>Load more...</Button>
           </div>
         </div>
 

@@ -1,51 +1,14 @@
 import React from "react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
-export const NewUserChart = () => {
-    const data = [
-        {
-          name: '07-08-22',
-          student: 12,
-          instructor: 20,
-        },
-        {
-          name: '08-08-22',
-          student: 30,
-          instructor: 13,
-        },
-        {
-          name: '09-08-22',
-          student: 2,
-          instructor: 9,
-        },
-        {
-          name: '10-08-22',
-          student: 2,
-          instructor: 3,
-        },
-        {
-          name: '11-08-22',
-          student: 18,
-          instructor: 48,
-        },
-        {
-          name: '12-08-22',
-          student: 23,
-          instructor: 38,
-        },
-        {
-          name: '13-08-22',
-          student: 34,
-          instructor: 43,
-        },
-      ];
+export const NewUserChart = ({data}) => {
 
     return (
-      <div className="w-full max-w-xl flex flex-col  border-2 rounded-xl shadow-md m-4 bg-white">
+      <div className="w-full border-2 rounded-xl shadow-md m-4 bg-white">
         <h1 className="p-4 font-semibold text-lg">New User</h1>
-        <ResponsiveContainer width={500} height={400}>
+        <ResponsiveContainer width="100%" height={400}>
           <LineChart
-            width={600}
+            width="50%"
             height={300}
             data={data}
             margin={{

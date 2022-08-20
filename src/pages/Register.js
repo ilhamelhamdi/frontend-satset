@@ -1,7 +1,9 @@
-import React, {useState} from 'react'
+import React, {useState, useContext} from 'react'
 import { API_URL } from "../config"
 import { useNavigate } from 'react-router-dom'
 import { Loading } from "../components/Loading"
+import { AuthContext } from "../context"
+import Toast from "../components/Toast"
 
 const Register = () => {
   const [image, setImage] = useState({preview: '', raw: ''})
@@ -15,6 +17,8 @@ const Register = () => {
   const [errorEmail, setErrorEmail] = useState(null)
   const navigate = useNavigate()
   const [isLoading, setIsLoading] = useState(false)
+  const { setAuth } = useContext(AuthContext)
+  const tokenTTL = 6 * 3600 * 1000
 
   const handleImage = e => {
     if(e.target.files.length) {
@@ -54,24 +58,38 @@ const Register = () => {
     formData.role = role
     formData.image = imageUrl
 
-    fetch(API_URL + '/register', {
-      method: "POST",
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      })
-        .then((res) => {
-          if(res.status === 200){
-            localStorage.setItem('accessToken', res.headers.get('Token'))
-            setIsLoading(false)
-            navigate('/')
-          }
+    try{
+      const res = await fetch(API_URL + '/register', {
+        method: "POST",
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(formData)
         })
-        .catch((error )=> {
-          console.log(error)
-          setIsLoading(false)
-        })
+      if(res.status === 200) {
+        const user = (await res.json()).data
+        const accessToken = res.headers.get('Token')
+        if(role === 'student'){
+          setAuth({
+            user,
+            accessToken: {
+              value: accessToken,
+              exp: Date.now() + tokenTTL
+            }
+          })
+          Toast('success', 'Successfully registered!')
+          navigate('/')
+        } else {
+          Toast('info', 'Successfully registered! Wait approval from admin.')
+        }
+      } else {
+        Toast('error', 'Email already registered')
+      }
+    } catch (e) {
+      Toast('error', e)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const ImageUploadHandler = async () => {
@@ -89,7 +107,7 @@ const Register = () => {
         const json = await res.json()
         return json.data.link
       } catch(e){
-        console.log(e)
+        Toast('error', e)
         setIsLoading(false)
       }
     }

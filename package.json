@@ -3,7 +3,8 @@
     "version": "0.1.0",
     "private": true,
     "engines": {
-        "node": "16.x"
+        "node": "16.x",
+        "npm": "8.x"
     },
     "dependencies": {
         "@fortawesome/fontawesome-svg-core": "^6.1.2",
@@ -26,7 +27,7 @@
         "web-vitals": "^2.1.4"
     },
     "scripts": {
-        "start": "pm2 start server/server.js",
+        "start": "pm2-runtime start ecosystem.config.js --env production",
         "start-dev": "react-scripts start --host 0.0.0.0",
         "build": "react-scripts build",
         "test": "react-scripts test",

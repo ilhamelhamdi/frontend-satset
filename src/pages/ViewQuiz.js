@@ -105,8 +105,6 @@ export const ViewQuiz = () => {
             </MainLayout>
         )
     }
-    
-
 
     if(data) {
         return (
@@ -186,8 +184,15 @@ export const ViewQuiz = () => {
                         :
                             <div className="p-3">
                                 <h1 className="font-semibold text-xl">
-                                    {currentQuestion &&
+                                    {currentQuestion ?
                                         currentNumber + '. ' + currentQuestion.question
+                                        :
+                                        <div>
+                                            <h1 className="text-center">Selamat datang di Quiz: {data.title}</h1>
+                                            <p className="text-sm mt-10">Tekan tombol angka disamping kiri untuk menampilkan soal sesuai urutan</p>
+                                            <p className="text-sm">Klik Submit jika sudah selesai</p>
+                                            <p className="text-sm">Selamat Mengerjakan!</p>
+                                        </div>
                                     }
                                 </h1>
                                 <div className="ml-6 grid grid-cols-2 gap-2 mt-5">
@@ -211,18 +216,18 @@ export const ViewQuiz = () => {
                                 </div>
                                 <div className="flex justify-between mt-5">
                                     {
-                                        currentNumber !== 1 ?
+                                        currentNumber && currentNumber !== 1 ?
                                             <button className="border-2 rounded-md py-2 px-4 hover:bg-teal-600 hover:text-white" onClick={() => changeQuestion(currentNumber-1)}>Previous</button>
                                         :
                                             <div></div>
                                     }
                                     {
-                                        currentNumber !== data.questions.length ?
+                                        currentNumber && currentNumber !== data.questions.length ?
                                             <button className="border-2 rounded-md py-2 px-4 hover:bg-teal-600 hover:text-white" onClick={() => changeQuestion(currentNumber+1)}>Next</button>
                                         :
                                             (answer.length === data.questions.length ?
                                                 <button className="border-2 rounded-md py-2 px-4 hover:bg-teal-600 bg-teal-700 text-white" onClick={() => submitQuiz()}>Submit</button>
-                                            :
+                                            :   currentNumber &&
                                                 <button className="border-2 rounded-md py-2 px-4 cursor-no-drop" disabled>Submit</button>    
                                             )
                                         

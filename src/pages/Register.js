@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { Loading } from "../components/Loading"
 import { AuthContext } from "../context"
 import Toast from "../components/Toast"
+import MainLayout from "../components/MainLayout"
 
 const Register = () => {
   const [image, setImage] = useState({preview: '', raw: ''})
@@ -115,7 +116,7 @@ const Register = () => {
   }
 
   return (
-    <div>
+    <MainLayout>
       {
         isLoading ?
           <Loading/>
@@ -204,7 +205,7 @@ const Register = () => {
             </form>
           </div>
       }
-    </div>
+    </MainLayout>
   )
 }
 

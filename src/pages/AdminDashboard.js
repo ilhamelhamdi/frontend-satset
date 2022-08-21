@@ -1,8 +1,8 @@
-import React, {useState, useEffect, useContext} from "react";
+import React, {useEffect, useContext} from "react";
 import { useNavigate } from "react-router-dom"
-import {SummaryCard} from '../components/SummaryCard'
-import {NewUserChart} from '../components/NewUserChart'
-import {TopCourseChart} from "../components/TopCourseChart";
+import {SummaryCard} from '../components/SummaryCard/SummaryCard'
+import {NewUserChart} from '../components/Chart/NewUserChart'
+import {TopCourseChart} from "../components/Chart/TopCourseChart";
 import MainLayout from "../components/MainLayout";
 import Header from "../components/Header"
 import { API_URL } from "../config"
@@ -13,7 +13,6 @@ import ChartSkeleton from "../components/Chart/skeleton";
 
 
 export const DashboardData = () => {
-    const [dashboardData, setDashboardData] = useState()
     const accessToken = JSON.parse(localStorage.getItem('auth')).accessToken.value
 
     const fetchData = async (url, token) => {
@@ -22,13 +21,13 @@ export const DashboardData = () => {
                 'Authorization': 'Bearer ' + token
             }
         })
-        setDashboardData((await res.json()).data)
-        return dashboardData
+        const data = ((await res.json()).data)
+        return data
     }
 
     const { data, error } = useSWR([`${API_URL}/admin-dashboard`, accessToken], fetchData)
 
-    if(!dashboardData){
+    if(!data && !error){
         return (
             <div>
                 <div className="flex flex-row justify-between">
@@ -52,19 +51,19 @@ export const DashboardData = () => {
         )
     }
 
-    if(dashboardData){
+    if(data) {
         return (
             <div>
                 <div className="flex flex-row justify-between">
                     {
-                        dashboardData.data.map((val, i) => (
+                        data.data.map((val, i) => (
                             <SummaryCard key={i} item={val}/>
                         ))
                     }
                 </div>
-                <div className="flex justify-between mt-5 xl:flew-row">
-                    <NewUserChart data={dashboardData.new_user}/>
-                    <TopCourseChart top_courses={dashboardData.top_courses}/>
+                <div className="flex justify-between mt-5 flex-col lg:flex-row">
+                    <NewUserChart data={data.new_user}/>
+                    <TopCourseChart top_courses={data.top_courses}/>
                 </div>
             </div>
         )

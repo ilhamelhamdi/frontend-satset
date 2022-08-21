@@ -10,6 +10,7 @@ import { useState } from "react";
 import { API_URL } from "../config";
 import CourseCardSkeleton from "../components/CourseCard/skeleton";
 import useSWR from "swr";
+import { Link } from "react-router-dom";
 
 const CoursesList = ({ index }) => {
   const fetchCourses = async (...args) => {
@@ -94,7 +95,9 @@ const Homepage = () => {
           <div className="w-1/2 space-y-4 flex flex-col justify-center">
             <h2 className="text-3xl text-teal-700 font-bold">Become An Instructor</h2>
             <p>Be the one who share the knowledge to the others. We provide the tools and skills to teach what you love.</p>
-            <Button>Start teaching today</Button>
+            <Link to='/register'>
+              <Button>Start teaching today</Button>
+            </Link>
           </div>
         </div>
       </div>

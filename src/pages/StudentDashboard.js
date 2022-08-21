@@ -7,7 +7,7 @@ import CourseCard from "../components/CourseCard"
 import CourseCardSkeleton from "../components/CourseCard/skeleton"
 import Header from "../components/Header"
 import MainLayout from "../components/MainLayout"
-import { SummaryCard } from "../components/SummaryCard"
+import { SummaryCard } from "../components/SummaryCard/SummaryCard"
 import { SummaryCardSkeleton } from "../components/SummaryCardSkeleton"
 import { API_URL } from "../config"
 import { AuthContext } from "../context"
@@ -21,20 +21,21 @@ const CoursesList = (props) => {
   if (!data) {
     return [1, 2, 3, 4, 5].map((i) => (
       <CourseCardSkeleton key={i}>
-        <div className="mb-6 h-4 bg-slate-300 w-1/3" />
-        <div className="mb-1 h-4 bg-slate-300 w-1/2 self-end" />
+        <div className="mb-5 h-4 bg-slate-300 w-1/3" />
+        <div className="mb-1 h-4 w-full bg-slate-300" />
+        <div className="mb-1 h-4 bg-slate-300 w-1/6 self-end" />
       </CourseCardSkeleton>
     ))
   }
 
   // Fetch success handler
   if (data) {
-    return data.map(course => {
+    return data.map((course) => {
       const status = (course.completed_content === course.total_content) ? 'Completed' : 'In Progress'
       if (props.status === 'All' || props.status === status) return (
         <CourseCard key={course.id} title={course.title} image={course.image} id={course.id}>
-          <p className="mb-4 font-semibold text-slate-500">{course.status}</p>
-          <div className="border-solid border border-teal-700 h-4">
+          <p className="mb-4 font-semibold text-slate-500">{course.instructor_name}</p>
+          <div className="border-solid border border-teal-700 h-4 rounded-full overflow-hidden">
             <div
               style={{ width: (course.completed_content / course.total_content * 100) + '%' }}
               className="bg-teal-700 h-full"
@@ -44,8 +45,12 @@ const CoursesList = (props) => {
             {course.completed_content}/{course.total_content}
           </div>
         </CourseCard>
+
       )
     })
+  }
+  if (error) {
+    console.log(error);
   }
 
 }
@@ -66,6 +71,7 @@ const StudentDashboard = () => {
       }
     }
     const res = await fetch(url, requestOptions)
+    if (res.status === 403) navigate('/403', { replace: true })
     return (await res.json()).data
   }
 
@@ -97,10 +103,10 @@ const StudentDashboard = () => {
             {
               summaryData ?
                 <>
-                  <SummaryCard item={{ name: 'Created Course', amount: summaryData.created_course }} />
-                  <SummaryCard item={{ name: 'Verified Course', amount: summaryData.verified_course }} />
-                  <SummaryCard item={{ name: 'Pending Course', amount: summaryData.pending_course }} />
-                  <SummaryCard item={{ name: 'Rejected Course', amount: summaryData.rejected_course }} />
+                  <SummaryCard item={{ name: 'Enrolled Course', amount: summaryData.enrolled_course }} />
+                  <SummaryCard item={{ name: 'Completed Course', amount: summaryData.completed_course }} />
+                  <SummaryCard item={{ name: 'Completed Lecture', amount: summaryData.completed_lecture }} />
+                  <SummaryCard item={{ name: 'Completed Quiz', amount: summaryData.completed_quiz }} />
                 </>
                 :
                 <>

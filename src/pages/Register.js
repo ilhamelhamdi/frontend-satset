@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom'
 import { Loading } from "../components/Loading"
 import { AuthContext } from "../context"
 import Toast from "../components/Toast"
-import MainLayout from "../components/MainLayout"
 
 const Register = () => {
   const [image, setImage] = useState({preview: '', raw: ''})
@@ -103,8 +102,10 @@ const Register = () => {
           headers: {
             'Authorization': 'Client-ID 35d873feaf37beb'
           },
+          referrerPolicy: "no-referrer",
           body: data
         })
+        if (res.status !== 200) throw Error('Failed to upload image')
         const json = await res.json()
         return json.data.link
       } catch(e){
@@ -116,7 +117,7 @@ const Register = () => {
   }
 
   return (
-    <MainLayout>
+    <div>
       {
         isLoading ?
           <Loading/>
@@ -145,12 +146,7 @@ const Register = () => {
                     <div className="col-span-3">
                       <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">Name</label>
                       <input style={errorName && {borderColor: "#dc2626"}} className="w-full border-2 rounded-md py-2 px-2 focus:outline-teal-700" type="text" value={name} onChange={e => {setName(e.target.value); setErrorName(null)}}/>
-                      {
-                        errorName !== '' ?
-                          <p className="text-red-600 text-xs mt-1">{errorName}</p>
-                        :
-                          <></>
-                      }
+                      { errorName !== '' && <p className="text-red-600 text-xs mt-1">{errorName}</p> }
                     </div>
                   </div>
                   <div className="mb-3">
@@ -168,22 +164,12 @@ const Register = () => {
                   <div className="mb-3">
                     <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">Email</label>
                     <input style={errorEmail && {borderColor: "#dc2626"}} className="w-full border-2 rounded-md py-2 px-2 focus:outline-teal-700" type="email" value={email} onChange={e => {setEmail(e.target.value); setErrorEmail(null)}}/>
-                    {
-                      errorEmail !== '' ?
-                        <p className="text-red-600 text-xs mt-1">{errorEmail}</p>
-                      :
-                        <></>
-                    }
+                    { errorEmail !== '' && <p className="text-red-600 text-xs mt-1">{errorEmail}</p> }
                   </div>
                   <div className="mb-3">
                     <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">Password</label>
                     <input style={errorPassword && {borderColor: "#dc2626"}} className="w-full border-2 rounded-md py-2 px-2 focus:outline-teal-700" type="password" value={password} onChange={e => {setPassword(e.target.value); setErrorPassword(null)}}/>
-                    {
-                      errorPassword !== '' ?
-                        <p className="text-red-600 text-xs mt-1">{errorPassword}</p>
-                      :
-                        <></>
-                    }
+                    { errorPassword !== '' && <p className="text-red-600 text-xs mt-1">{errorPassword}</p> }
                   </div>
                   <div className="mb-3">
                     <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="role">Role</label>
@@ -205,7 +191,7 @@ const Register = () => {
             </form>
           </div>
       }
-    </MainLayout>
+    </div>
   )
 }
 

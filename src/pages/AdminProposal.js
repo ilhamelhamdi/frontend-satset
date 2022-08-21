@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useContext} from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { ProposalCard } from "../components/ProposalCard";
 import { AuthContext } from "../context"
 import { useNavigate } from "react-router-dom"
@@ -10,7 +10,7 @@ import Toast from "../components/Toast";
 import Button from "../components/Button";
 
 export const AdminProposal = () => {
-    const [data, setData] = useState(null)
+    const [dataProposal, setDataProposal] = useState([])
     const [isLoading, setIsLoading] = useState(true)
     const [type, setType] = useState('instructor')
     const [page, setPage] = useState(1)
@@ -24,13 +24,13 @@ export const AdminProposal = () => {
     }, [])
 
     useEffect(() => {
-        fetchData('instructors', 1)
-          .then(data => (setData(data.data), setNextLink(data.next)))
-    }, []);
+        fetchData(type + 's', page)
+            .then(data => (setDataProposal([...dataProposal, ...data.data]), setNextLink(data.next)))
+    }, [page]);
 
     const fetchData = async (type, page) => {
         setIsLoading(true)
-        try{
+        try {
             const res = await fetch(API_URL + `/proposal-${type}/${page}`, {
                 method: 'GET',
                 headers: {
@@ -40,24 +40,24 @@ export const AdminProposal = () => {
             })
             const json = await res.json()
             return json
-        } catch(e) {
+        } catch (e) {
             console.log(e)
-            throw(e)
+            throw (e)
         } finally {
             setIsLoading(false)
         }
     }
 
     const changeData = val => {
-        setType(val.slice(0,-1))
+        setType(val.slice(0, -1))
         fetchData(val, 1)
-          .then(data => (setData(data.data), setNextLink(data.next)))
+            .then(data => (setDataProposal(data.data), setNextLink(data.next)))
     }
 
     const actionHandler = async (id, action, icon) => {
         setIsLoading(true)
         const typeOfID = type === 'instructor' ? 'user_id' : 'course_id'
-         try{
+        try {
             const res = await fetch(API_URL + `/verify-${type}`, {
                 method: 'POST',
                 headers: {
@@ -68,15 +68,15 @@ export const AdminProposal = () => {
                     {
                         [typeOfID]: id,
                         "verified_status": action
-                })
+                    })
             })
             const json = await res.json()
             return json
-        } catch(e) {
+        } catch (e) {
             Toast('error', e)
-            throw(e)
+            throw (e)
         } finally {
-            setData(data.filter(val => val.id !== id))
+            setDataProposal(dataProposal.filter(val => val.id !== id))
             setIsLoading(false)
             Toast(icon, `Successfully ${action}`)
         }
@@ -84,8 +84,8 @@ export const AdminProposal = () => {
 
     return (
         <MainLayout>
-            <Header/>
-            <div className="container mx-auto pt-10">
+            <Header />
+            <div className="container mx-auto xl:max-w-screen-xl px-4 pt-10">
                 <div className="flex justify-between">
                     <h1 className="font-bold text-3xl text-teal-700">Proposal</h1>
                     <div className="flex">
@@ -98,34 +98,34 @@ export const AdminProposal = () => {
                 <div className="grid lg:grid-cols-5 sm:grid-cols-2 mt-5 gap-x-2">
                     {
                         isLoading ?
-                            [1,2,3,4,5,6,7,8,9,10].map(i => (
+                            [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
                                 <SummaryCardSkeleton key={i}>
-                                    <div className="h-16 bg-slate-300 self-center w-16 rounded-full mb-3"/>
-                                    <div className="h-6 bg-slate-300 self-center w-full rounded mb-3"/>
-                                    <div className="h-6 bg-slate-300 self-center w-full rounded mb-3"/>
+                                    <div className="h-16 bg-slate-300 self-center w-16 rounded-full mb-3" />
+                                    <div className="h-6 bg-slate-300 self-center w-full rounded mb-3" />
+                                    <div className="h-6 bg-slate-300 self-center w-full rounded mb-3" />
                                     <div className="flex justify-between gap-x-1">
-                                        <div className="h-6 bg-slate-300 self-center w-full rounded"/>
-                                        <div className="h-6 bg-slate-300 self-center w-full rounded"/>
+                                        <div className="h-6 bg-slate-300 self-center w-full rounded" />
+                                        <div className="h-6 bg-slate-300 self-center w-full rounded" />
                                     </div>
                                 </SummaryCardSkeleton>
                             ))
-                        :
-                            data.length > 0 ?
-                                data.map((val, idx) => (
+                            :
+                            dataProposal.length > 0 ?
+                                dataProposal.map((val, idx) => (
                                     <ProposalCard
                                         item={val}
                                         key={idx}
                                         action={actionHandler}
                                     />
                                 ))
-                            :
+                                :
                                 <h1 className="text-lg">No data avalaible</h1>
                     }
                 </div>
                 {
                     !isLoading && nextLink &&
-                    <div className="flex justify-center">
-                        <Button onClick={() => setPage(page + 1)}>Load more...</Button>
+                    <div className="flex justify-center mb-5">
+                        <Button onClick={() => { fetchData(type + 's', page + 1); setPage(page + 1) }}>Load more...</Button>
                     </div>
                 }
             </div>

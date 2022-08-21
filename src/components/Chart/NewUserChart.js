@@ -19,7 +19,7 @@ export const NewUserChart = ({data}) => {
             }}
           >
             <CartesianGrid strokeDasharray="3 3" />
-            <XAxis dataKey="name" />
+            <XAxis dataKey="date" />
             <YAxis />
             <Tooltip />
             <Legend />

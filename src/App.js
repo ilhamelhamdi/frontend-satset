@@ -13,6 +13,7 @@ import { fas } from '@fortawesome/free-solid-svg-icons'
 import AuthVerify from './components/AuthVerify';
 import CreateNewCourse from './pages/CreateNewCourse';
 import Unauthorized from './pages/Unauthorized';
+import EditCourse from './pages/EditCourse';
 
 library.add(fas)
 
@@ -30,8 +31,9 @@ function App() {
           <Route path='/course/:id' element={<CourseDetail />} />
           <Route path='/quiz' element={<ViewQuiz />} />
           <Route path='/create-course' element={<CreateNewCourse />} />
-          <Route path='/403' element={<Unauthorized/>} />
-          <Route path='/quiz/:id' element={<ViewQuiz/>} />
+          <Route path='/edit-course/:id' element={<EditCourse />} />
+          <Route path='/403' element={<Unauthorized />} />
+          <Route path='/quiz/:id' element={<ViewQuiz />} />
         </Routes>
       </AuthVerify>
     </BrowserRouter>

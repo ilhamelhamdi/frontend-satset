@@ -1,22 +1,94 @@
-import { useEffect, useState } from "react"
+import { useContext, useEffect, useState } from "react"
+import { useParams } from "react-router-dom"
+import { API_URL } from "../../config"
+import { AuthContext } from "../../context"
 import Icons from "../../images/icons"
 import Button from "../Button"
 import ModalBox from "../ModalBox"
+import Toast from "../Toast"
 
 
 const InputQuizModal = (props) => {
   const [quiz, setQuiz] = useState(JSON.parse(localStorage.getItem('temp')))
   const [title, setTitle] = useState(quiz ? quiz.title : '')
-  const [questions, setQuestions] = useState(quiz ? quiz.questions : [{ questionId: 0 }])
+  const [questions, setQuestions] = useState(quiz ? quiz.questions : [{ id: -1 }])
   const [activeQuestion, setActiveQuestion] = useState()
+  const [isLoading, setIsLoading] = useState(false)
+
+  const courseId = (useParams()).id
+  const { auth } = useContext(AuthContext)
+
 
   const handleClose = () => {
     localStorage.removeItem('temp')
     props.setIndexEdit(-1)
     props.setShowInputQuiz(false)
+    setIsLoading(false)
   }
 
-  const handleSaveButton = () => {
+  const handleAddQuiz = async (courseId) => {
+    try {
+      // Add Quiz Content
+      const resContent = await fetch(`${API_URL}/course/${courseId}/quiz`, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + auth.accessToken.value,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(quiz)
+      })
+      console.log(quiz);
+
+      // Modify Content Order
+      const order = props.contents.map(content => (content.type))
+      order.push('q')
+      const resOrder = await fetch(`${API_URL}/course-order/${courseId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Bearer ' + auth.accessToken.value,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ order })
+      })
+
+      if (resContent.status === 200 && resOrder.status === 200) {
+        Toast('success', 'Successfully Added Lecture')
+      }
+      const quizId = (await resContent.json()).quiz_id
+      setQuiz({ ...quiz, id: quizId })
+      console.log(quizId);
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  const handleModifyQuiz = async (quizId) => {
+    try {
+      const res = await fetch(`${API_URL}/quiz/${quizId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Bearer ' + auth.accessToken.value,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          title: quiz.title
+        })
+      })
+      if (res.status === 202) Toast('success', 'Successfully Modified Quiz')
+      else Toast('error', 'Failed to modify quiz')
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  const handleSaveButton = async () => {
+    setIsLoading(true)
+
+    if (courseId !== undefined) {
+      if (quiz.id !== undefined) await handleModifyQuiz(quiz.id)
+      else await handleAddQuiz(courseId)
+    }
+
     const content = {
       type: 'q',
       data: quiz
@@ -28,22 +100,22 @@ const InputQuizModal = (props) => {
       })
       props.setContents(newContents)
     } else {
-      props.setContents([...props.contents, { type: 'q', data: quiz }])
+      props.setContents([...props.contents, { type: 'q', data: { ...quiz, questions } }])
     }
     handleClose()
   }
 
-  const handleTitleUpdate = () => {
-    setQuiz({ ...quiz, title })
-  }
+  // const handleTitleUpdate = () => {
+  //   setQuiz({ ...quiz, title })
+  // }
 
   const handleAddQuestion = () => {
-    setQuestions([...questions, { questionId: questions.length }])
+    setQuestions([...questions, { id: -(questions.length + 1) }])
   }
 
   useEffect(() => {
-    setQuiz({ ...quiz, questions })
-  }, [questions])
+    setQuiz({ ...quiz, questions, title })
+  }, [questions, title])
 
   useEffect(() => {
     localStorage.setItem('temp', JSON.stringify(quiz))
@@ -59,7 +131,7 @@ const InputQuizModal = (props) => {
           placeholder="Insert your lecture title"
           value={title}
           onChange={e => setTitle(e.target.value)}
-          onBlur={handleTitleUpdate}
+          // onBlur={handleTitleUpdate}
           className="inline-block w-full outline outline-2 outline-slate-200 focus:outline-teal-700 px-4 py-2 rounded-lg"
         />
       </div>
@@ -67,8 +139,8 @@ const InputQuizModal = (props) => {
         <h2 className="text-lg  mb-2">Questions</h2>
         <div className="space-y-4 mb-4">{
           questions.map((question, idx) => {
-            if (activeQuestion === question.questionId) {
-              return <InputQuestion key={idx} {...{ questions, setQuestions, idx, setActiveQuestion }} />
+            if (activeQuestion === question.id) {
+              return <InputQuestion key={idx} {...{ questions, setQuestions, idx, setActiveQuestion, quizId: quiz.id }} />
             }
             return <NonInputQuestion key={idx} {...{ question, idx, activeQuestion, setActiveQuestion }} />
 
@@ -79,40 +151,113 @@ const InputQuizModal = (props) => {
       </div>
 
       <div className="space-x-2 flex justify-end">
-        <Button onClick={handleClose} className="font-bold">Cancel</Button>
-        <Button onClick={handleSaveButton} className="font-bold">Save</Button>
+        {
+          isLoading ?
+            <Button className="cursor-not-allowed">
+              <Icons.Loading className="animate-spin h-5 w-5 mr-3 inline-block" />
+              Loading...
+            </Button> :
+            <>
+              <Button onClick={handleClose} className="font-bold">Cancel</Button>
+              <Button onClick={handleSaveButton} className="font-bold">Save</Button>
+            </>
+        }
       </div>
     </ModalBox >
   )
 }
 
-const InputQuestion = ({ questions, setQuestions, idx, setActiveQuestion }) => {
-  const [options, setOptions] = useState(questions[idx].options || [''])
-  const [optTrue, setOptTrue] = useState(questions[idx].optTrue)
-  const [question, setQuestion] = useState({
-    questionId: questions[idx].questionId || idx,
-    title: questions[idx].title || '',
-    options: questions[idx].options || options,
-    optTrue: questions[idx].optTrue || optTrue
-  })
+const InputQuestion = ({ questions, setQuestions, idx, setActiveQuestion, quizId }) => {
+  const { auth } = useContext(AuthContext)
+  const courseId = (useParams()).id
+  const [question, setQuestion] = useState(questions[idx])
+  const [opt, setOpt] = useState(question.opt || [''])
+  const [opt_true, setOptTrue] = useState(question.opt_true)
+  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSaveQuestion = () => {
+  const handleModifyQuestion = async (questionId) => {
+    try {
+      const res = await fetch(`${API_URL}/question/${questionId}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': 'Bearer ' + auth.accessToken.value,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          question: question.question,
+          opt: question.opt,
+          opt_true: question.opt_true
+        })
+      })
+      if (res.status === 202) Toast('success', 'Successfully Modified Question')
+      else Toast('error', 'Failed to modify question')
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  const handleAddQuestion = async (quizId) => {
+    try {
+      const res = await fetch(`${API_URL}/quiz/${quizId}/question`, {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + auth.accessToken.value,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          question: question.question,
+          opt: question.opt,
+          opt_true: question.opt_true
+        })
+      })
+      if (res.status === 200) Toast('success', 'Successfully Added Question')
+      const questionId = (await res.json()).question_id
+      setQuestion({ ...question, id: questionId })
+    } catch (e) {
+      console.log(e);
+    }
+  }
+
+  const handleSaveQuestion = async () => {
+    setIsLoading(true)
+    if (courseId !== undefined && quizId) {
+      if (question.id >= 0) await handleModifyQuestion(question.id)
+      else await handleAddQuestion(quizId)
+    }
     const newQuestions = questions.map((val, i) => {
       if (i === idx) return question
       return val
     })
     setQuestions(newQuestions)
+    setIsLoading(false)
     setActiveQuestion()
   }
 
+  const handleDeleteQuestionAPI = async () => {
+    const res = await fetch(`${API_URL}/quiz/${quizId}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': 'Bearer ' + auth.accessToken.value,
+        'Content-Type': 'application/json'
+      }
+    })
+    if (res.status === 202) Toast('success', 'Successfully Deleted Question')
+    else Toast('error', 'Failed to delete question')
+  }
+
   const handleRemoveQuestion = () => {
+    if (courseId !== undefined && question.id >= 0) {
+      console.log('fire');
+      handleDeleteQuestionAPI(question.id)
+    }
+
     const newQuestions = [...questions]
     newQuestions.splice(idx, 1)
     setQuestions(newQuestions)
   }
 
   const handleAddOption = () => {
-    setOptions([...options, ''])
+    setOpt([...opt, ''])
   }
 
   // Rerender question box when questions list updated - TOP -> DOWN
@@ -120,10 +265,10 @@ const InputQuestion = ({ questions, setQuestions, idx, setActiveQuestion }) => {
     setQuestion(questions[idx])
   }, [questions])
 
-  // Update Question object when options list or optTrue updated - BOTTOM -> UP
+  // Update Question object when opt list or opt_true updated - BOTTOM -> UP
   useEffect(() => {
-    setQuestion({ ...question, options, optTrue })
-  }, [options, optTrue])
+    setQuestion({ ...question, opt, opt_true })
+  }, [opt, opt_true])
 
   return (
     <div className="border rounded-lg w-full p-4 space-y-4 border-l-8 border-teal-700">
@@ -131,8 +276,8 @@ const InputQuestion = ({ questions, setQuestions, idx, setActiveQuestion }) => {
         <span>{idx + 1}.</span>
         <textarea
           placeholder="Question"
-          value={question.title}
-          onChange={e => setQuestion({ ...question, title: e.target.value })}
+          value={question.question}
+          onChange={e => setQuestion({ ...question, question: e.target.value })}
           className="inline-block flex-auto outline outline-2 outline-slate-200 focus:outline-teal-700 px-4 py-2 rounded-lg"
         />
         <Icons.Delete
@@ -142,15 +287,24 @@ const InputQuestion = ({ questions, setQuestions, idx, setActiveQuestion }) => {
         />
       </div>
       <div className="pl-4 pr-2 space-y-2">
-        {options.map((val, idx) => (
-          <InputOption key={idx} {...{ idx, options, optTrue, setOptions, setOptTrue, questionId: question.questionId }} />
+        {opt.map((val, idx) => (
+          <InputOption key={idx} {...{ idx, opt, opt_true, setOpt, setOptTrue, id: question.id }} />
         ))}
       </div>
       <div className="space-x-4 flex justify-between">
         <Button onClick={handleAddOption}>+ Add Option</Button>
         <div className="space-x-2">
-          <Button onClick={() => setActiveQuestion()}>Cancel</Button>
-          <Button onClick={handleSaveQuestion}>Save</Button>
+          {
+            isLoading ?
+              <Button className="cursor-not-allowed">
+                <Icons.Loading className="animate-spin h-5 w-5 mr-3 inline-block" />
+                Loading...
+              </Button> :
+              <>
+                <Button onClick={() => setActiveQuestion()}>Cancel</Button>
+                <Button onClick={handleSaveQuestion}>Save</Button>
+              </>
+          }
         </div>
       </div>
     </div >
@@ -159,7 +313,7 @@ const InputQuestion = ({ questions, setQuestions, idx, setActiveQuestion }) => {
 
 const NonInputQuestion = ({ question, idx, activeQuestion, setActiveQuestion }) => {
   const switchActiveQuestion = () => {
-    if (activeQuestion === undefined) setActiveQuestion(question.questionId)
+    if (activeQuestion === undefined) setActiveQuestion(question.id)
   }
   return (
     <div
@@ -168,14 +322,14 @@ const NonInputQuestion = ({ question, idx, activeQuestion, setActiveQuestion }) 
     >
       <div className="w-full flex space-x-2">
         <span>{idx + 1}.</span>
-        <span className="flex-auto pl-4">{question.title || 'Question'}</span>
+        <span className="flex-auto pl-4">{question.question || 'Question'}</span>
       </div>
       <div className="pl-4 pr-2 space-y-4">
-        {question.options ?
-          question.options.map((option, idx) => (
+        {question.opt ?
+          question.opt.map((option, idx) => (
             <NonInputOption key={idx} {...{ question, option, idx }} />
           )) :
-          <NonInputOption {...{ question: { questionId: 0 }, idx: 0 }} />
+          <NonInputOption {...{ question: { id: -1 }, idx: 0 }} />
         }
         {/* <div>Hamdi</div> */}
       </div>
@@ -188,8 +342,8 @@ const NonInputOption = (props) => {
     <div className="flex items-center space-x-2">
       <input
         type="radio"
-        name={props.question.questionId}
-        checked={(props.question.optTrue !== undefined) ? (props.question.optTrue === props.option) : false}
+        name={props.question.id}
+        checked={(props.question.opt_true !== undefined) ? (props.question.opt_true === props.option) : false}
         readOnly
         className="h-6 w-6 accent-teal-700 opacity-70 "
       />
@@ -199,33 +353,33 @@ const NonInputOption = (props) => {
 }
 
 const InputOption = (props) => {
-  const [option, setOption] = useState(props.options[props.idx])
+  const [option, setOption] = useState(props.opt[props.idx])
 
   useEffect(() => {
-    setOption(props.options[props.idx])
-  }, [props.options])
+    setOption(props.opt[props.idx])
+  }, [props.opt])
 
   const handleOptionChange = (val) => {
-    if (props.optTrue === option) props.setOptTrue(val)
+    if (props.opt_true === option) props.setOptTrue(val)
     setOption(val)
   }
 
   const handleOptionsUpdate = () => {
-    const newOptions = props.options.map((val, i) => {
+    const newOptions = props.opt.map((val, i) => {
       if (i === props.idx) return option
       return val
     })
-    props.setOptions(newOptions)
+    props.setOpt(newOptions)
   }
 
   const handleRemove = () => {
-    const newOptions = [...props.options]
+    const newOptions = [...props.opt]
     newOptions.splice(props.idx, 1)
-    props.setOptions(newOptions)
+    props.setOpt(newOptions)
   }
 
   const handleRadioButton = (e) => {
-    if (props.optTrue === option) props.setOptTrue()
+    if (props.opt_true === option) props.setOptTrue()
     else props.setOptTrue(option)
   }
 
@@ -234,10 +388,10 @@ const InputOption = (props) => {
       <input
         type="radio"
         value={option}
-        checked={(props.optTrue !== undefined) ? (props.optTrue === option) : false}
+        checked={(props.opt_true !== undefined) ? (props.opt_true === option) : false}
         onClick={handleRadioButton}
         onChange={() => { }}
-        name={props.questionId}
+        name={props.id}
         className="h-6 w-6 accent-teal-700"
       />
       <input

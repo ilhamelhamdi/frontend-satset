@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Toast from "../components/Toast";
 import { API_URL } from "../config"
@@ -14,7 +14,6 @@ export const ViewQuiz = () => {
     const [answer, setAnswer] = useState([])
     const [isResult, setIsResult] = useState(false)
     const [submittedAnswer, setSubmittedAnswer] = useState([])
-    const [isLoading, setIsLoading] = useState(false)
     const idOfQuiz = (useParams()).id
     const [quiz, setQuiz] = useState()
     const accessToken = JSON.parse(localStorage.getItem('auth')).accessToken.value
@@ -56,7 +55,6 @@ export const ViewQuiz = () => {
     }
 
     const submitQuiz = async () => {
-        setIsLoading(true)
         for(let i=0;i<quiz.questions.length;i++){
             const idxOfAns = answer.findIndex(el => el.number === i+1)
             submittedAnswer.push(answer[idxOfAns].answer)
@@ -74,7 +72,6 @@ export const ViewQuiz = () => {
             const data = (await res.json()).data
             setQuizFeedback(data)
             setIsResult(true)
-            setIsLoading(false)
         } catch (e) {
             Toast('error', e)
         }
@@ -89,7 +86,6 @@ export const ViewQuiz = () => {
             })
             const quizData = (await res.json()).data
             setQuiz(quizData)
-            // changeQuestion(1)
             return quizData
         } catch (e) {
             Toast('error', e)
@@ -240,127 +236,4 @@ export const ViewQuiz = () => {
         </div>
         )
     }
-
-    // return (
-    //     <div className="container mx-auto xl:max-w-screen-xl px-4 pt-2 mb-8 mt-10">
-    //         <h1 className="font-semibold text-3xl">Quiz 1</h1>
-    //         <div className="flex w-full mt-2">
-    //             <div className="w-3/12 border-2 rounded-xl p-3 mr-5 h-full">
-    //                 {
-    //                     isResult ?
-    //                         <div>
-    //                             <h1 className="font-semibold text-5xl text-center">{quizFeedback.score}</h1>
-    //                             <h1 className="text-center mb-3">Score</h1>
-    //                             {
-    //                                 quizFeedback.answer_feedback.map((val, idx) => (
-    //                                     <button
-    //                                         className="border-2 py-2 px-3 rounded-lg hover:border-gray-400 mr-1 text-white"
-    //                                         key={idx}
-    //                                         style={{backgroundColor: val ? "#0D9488" : "#dc2626"}}
-    //                                         >
-    //                                             {idx+1}
-    //                                     </button>
-    //                                 ))
-    //                             }
-    //                         </div>
-
-    //                     :
-    //                         isLoading ?
-    //                             quiz.questions.map((val, idx) => (
-    //                                 <button
-    //                                     className="border-2 py-2 px-3 rounded-lg hover:border-gray-400 mr-1"
-    //                                     key={idx}
-    //                                     style={{
-    //                                         backgroundColor: isAnswerExist(idx+1) ? "#0D9488" : (currentNumber === idx+1 ? "#E5E7EB" : "white"),
-    //                                         color: isAnswerExist(idx+1) ? "white" : "black"
-    //                                     }}
-    //                                     onClick={() => changeQuestion(idx+1)}
-    //                                     >
-    //                                         {idx+1}
-    //                                 </button>
-    //                             ))
-    //                         :
-    //                             <p>Nunggu</p>
-    //                 }
-    //             </div>
-                <div className="w-9/12 border-2 rounded-xl p-3 h-full">
-                    {
-                        isResult ?
-                            <div className="p-3">
-                                {
-                                    data.questions.map((val, idx) => (
-                                        <div className="mb-2">
-                                            <h1 className="font-semibold text-xl">
-                                                {idx+1 + '. ' + val.question}
-                                            </h1>
-                                            <div className="ml-6 grid grid-cols-2 gap-2 mt-2">
-                                                {
-                                                    val.opt.map((opt, index) => (
-                                                        <a
-                                                            className="p-2 border-2 border-gray-200 hover:border-gray-400 w-full rounded-md text-start mr-1"
-                                                            key={index}
-                                                            style={{
-                                                                backgroundColor: submittedAnswer[idx] === opt ? (quizFeedback.answer_feedback[idx] ? "#0D9488" : "#dc2626") : "white",
-                                                                color: submittedAnswer[idx] === opt ? "white" : "black"
-                                                            }}
-                                                            >{opt}
-                                                        </a>
-                                                    ))
-                                                }
-                                            </div>
-                                        </div>
-                                    ))
-                                }
-                            </div>
-                        :
-                            <div className="p-3">
-                                <h1 className="font-semibold text-xl">
-                                    {currentQuestion &&
-                                        currentNumber + '. ' + currentQuestion.question
-                                    }
-                                </h1>
-                                <div className="ml-6 grid grid-cols-2 gap-2 mt-5">
-                                    {
-                                        currentQuestion ?
-                                            currentQuestion.opt.map((val, idx) => (
-                                                <button
-                                                    className="p-2 border-2 border-gray-200 hover:border-gray-400 w-full rounded-md text-start mr-1"
-                                                    key={idx}
-                                                    onClick={e => answerQuestion(val)}
-                                                    style={{
-                                                        backgroundColor: currentAnswer === val ? "#0D9488" : "white",
-                                                        color: currentAnswer === val ? "white" : "black"
-                                                    }}
-                                                    >{val}
-                                                </button>
-                                            ))
-                                        :
-                                            <></>
-                                    }
-                                </div>
-                                <div className="flex justify-between mt-5">
-                                    {
-                                        currentNumber !== 1 ?
-                                            <button className="border-2 rounded-md py-2 px-4 hover:bg-teal-600 hover:text-white" onClick={() => changeQuestion(currentNumber-1)}>Previous</button>
-                                        :
-                                            <div></div>
-                                    }
-                                    {
-                                        currentNumber !== data.questions.length ?
-                                            <button className="border-2 rounded-md py-2 px-4 hover:bg-teal-600 hover:text-white" onClick={() => changeQuestion(currentNumber+1)}>Next</button>
-                                        :
-                                            (answer.length === data.questions.length ?
-                                                <button className="border-2 rounded-md py-2 px-4 hover:bg-teal-600 bg-teal-700 text-white" onClick={() => submitQuiz()}>Submit</button>
-                                            :
-                                                <button className="border-2 rounded-md py-2 px-4 cursor-no-drop" disabled>Submit</button>    
-                                            )
-                                        
-                                    }
-                                </div>
-                            </div>
-                    }
-    //             </div>
-    //         </div>
-    //     </div>
-    // )
 }

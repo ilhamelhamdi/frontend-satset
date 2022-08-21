@@ -1,5 +1,5 @@
 import { useContext, useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import useSWR from "swr"
 
 import Button from "../components/Button"
@@ -7,7 +7,7 @@ import CourseCard from "../components/CourseCard"
 import CourseCardSkeleton from "../components/CourseCard/skeleton"
 import Header from "../components/Header"
 import MainLayout from "../components/MainLayout"
-import { SummaryCard } from "../components/SummaryCard"
+import { SummaryCard } from "../components/SummaryCard/SummaryCard"
 import { SummaryCardSkeleton } from "../components/SummaryCardSkeleton"
 import { API_URL } from "../config"
 import { AuthContext } from "../context"
@@ -57,6 +57,7 @@ const InstructorDashboard = () => {
       }
     }
     const res = await fetch(url, requestOptions)
+    if (res.status === 403) navigate('/403')
     return (await res.json()).data
   }
 
@@ -67,7 +68,6 @@ const InstructorDashboard = () => {
   const [courseStatus, setCourseStatus] = useState('All')
 
   const navigate = useNavigate()
-
 
   let courses = []
   for (let i = 0; i < pageIndex; i++) {
@@ -147,6 +147,11 @@ const InstructorDashboard = () => {
 
         </div>
       </div>
+      <Link to='/create-course'>
+        <div className="fixed bottom-8 right-8 lg:bottom-16 lg:right-16 h-16 w-16 rounded-full bg-teal-700 flex justify-center items-center text-5xl text-white">
+          <span>+</span>
+        </div>
+      </Link>
     </MainLayout>
   )
 }
